@@ -2,9 +2,9 @@
 
 Today you are going to take an app that "works" without a database, and integrate a database into it.
 
-Remember the [Ticket Booker](https://github.com/cb-i-3/m4-6-react--reducers)? 😬
+Remember the [Ticket Booker](https://github.com/cb-nw-4/-m6-1-react--reducers)? 😬
 
-Currently, the backend is generating the seats for the theater. Let's migrate that to a database: MongoDB. It is totally up to you what to use. Some of you are using mongo locally, while others are using Atlas, the cloud solution. Either is good.
+Currently, the backend is generating the seats for the theater. Let's migrate that to a database: MongoDB.
 
 ## Setup
 
@@ -18,7 +18,7 @@ Currently, the backend is generating the seats for the theater. Let's migrate th
 
 Get the seats into a database > collection. Each `seat` should be a document in the collection.
 
-_You could use a util function like the one you created yesterday..._
+_You could use a util function like the one you created in the last workshop..._
 
 Keep in mind, that under normal circumstances, the FE should not be affected by any changes you make here. Meaning it shouldn't break because you change the code in the backend. Be mindful of what the FE expects as data as well as how you are storing it in the database.
 
