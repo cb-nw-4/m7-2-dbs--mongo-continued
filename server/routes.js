@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const { getSeats } = require("./handlers");
 const { batchImport } = require("../batchImport");
 
 const NUM_OF_ROWS = 8;
@@ -41,31 +42,20 @@ const randomlyBookSeats = (num) => {
 
 let state;
 
-router.get("/api/seat-availability", async (req, res) => {
-  if (!state) {
-    state = {
-      bookedSeats: randomlyBookSeats(30),
-    };
-  }
-
+router.get("/api/seat-availability",  async (req, res) => {
+  const seats = await getSeats();
   return res.json({
     seats: seats,
     bookedSeats: state.bookedSeats,
     numOfRows: 8,
     seatsPerRow: 12,
-  });
+  })
 });
 
 let lastBookingAttemptSucceeded = false;
 
 router.post("/api/book-seat", async (req, res) => {
   const { seatId, creditCard, expiration } = req.body;
-
-  if (!state) {
-    state = {
-      bookedSeats: randomlyBookSeats(30),
-    };
-  }
 
   await delay(Math.random() * 3000);
 
@@ -101,6 +91,12 @@ router.post("/api/book-seat", async (req, res) => {
   });
 });
 
-batchImport(seats);
+if (!state) {
+  state = {
+    bookedSeats: randomlyBookSeats(30),
+  };
+}
+
+batchImport(seats, state.bookedSeats);
 
 module.exports = router;

@@ -8,19 +8,19 @@ const options = {
   useUnifiedTopology: true,
 };
 
-const batchImport = async (seats) => {
+const batchImport = async (seats, bookedSeats) => {
   const seatPairs = Object.entries(seats);
-
+  console.log(bookedSeats)
   const cleaned = seatPairs.map(([_id, seat]) => {
-    return { _id, ...seat };
+    return { _id, ...seat, isBooked: bookedSeats[_id] || seat.isBooked };
   });
-  console.log(seats);
-  const seatIds = Object.keys(seats);
-  // console.log(seatIds);
-  const clean = seatIds.map((_id) => ({
-    _id,
-    ...seats[_id],
-  }));
+
+  // const seatIds = Object.keys(seats);
+  // const clean = seatIds.map((_id) => ({
+  //   _id,
+  //   ...seats[_id],
+  // }));
+
 
   const client = await MongoClient(MONGO_URI, options);
 
@@ -28,12 +28,13 @@ const batchImport = async (seats) => {
 
   const db = await client.db("ticketbooker");
 
-  const result = await db.collection("seats").find().toArray();
+  const seatCount = await db.collection("seats").countDocuments();
 
-  if (result.length == 0) {
-    await db.collection("seats").insertMany(clean);
+  if (seatCount > 0) {
+    await db.collection("seats").deleteMany({})
   }
 
+  await db.collection("seats").insertMany(cleaned);
 };
 
 module.exports = { batchImport };
