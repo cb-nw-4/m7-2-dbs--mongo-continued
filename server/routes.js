@@ -1,4 +1,6 @@
 const router = require("express").Router();
+const { getSeats, bookSeat } = require("./handlers");
+const { batchImport } = require("../batchImport");
 
 const NUM_OF_ROWS = 8;
 const SEATS_PER_ROW = 12;
@@ -41,12 +43,7 @@ const randomlyBookSeats = (num) => {
 let state;
 
 router.get("/api/seat-availability", async (req, res) => {
-  if (!state) {
-    state = {
-      bookedSeats: randomlyBookSeats(30),
-    };
-  }
-
+  const seats = await getSeats();
   return res.json({
     seats: seats,
     bookedSeats: state.bookedSeats,
@@ -58,23 +55,7 @@ router.get("/api/seat-availability", async (req, res) => {
 let lastBookingAttemptSucceeded = false;
 
 router.post("/api/book-seat", async (req, res) => {
-  const { seatId, creditCard, expiration } = req.body;
-
-  if (!state) {
-    state = {
-      bookedSeats: randomlyBookSeats(30),
-    };
-  }
-
-  await delay(Math.random() * 3000);
-
-  const isAlreadyBooked = !!state.bookedSeats[seatId];
-  if (isAlreadyBooked) {
-    return res.status(400).json({
-      message: "This seat has already been booked!",
-    });
-  }
-
+  const { creditCard, expiration } = req.body;
   if (!creditCard || !expiration) {
     return res.status(400).json({
       status: 400,
@@ -92,12 +73,16 @@ router.post("/api/book-seat", async (req, res) => {
 
   lastBookingAttemptSucceeded = !lastBookingAttemptSucceeded;
 
-  state.bookedSeats[seatId] = true;
+  await bookSeat(req, res, state);
 
-  return res.status(200).json({
-    status: 200,
-    success: true,
-  });
 });
+
+if (!state) {
+  state = {
+    bookedSeats: randomlyBookSeats(30),
+  };
+}
+
+batchImport(seats, state.bookedSeats);
 
 module.exports = router;
