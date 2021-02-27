@@ -29,10 +29,10 @@ const getSeats = async (req, res) => {
   return seats;
 };
 
-const bookSeat = async (req, res) => {
-  const { seatId } = req.body;
+const bookSeat = async (req, res, state) => {
+  const { seatId, email, fullName } = req.body;
   const client = await MongoClient(MONGO_URI, options);
-
+  console.log(email, fullName);
   await client.connect();
 
   const db = await client.db("ticketbooker");
@@ -47,7 +47,9 @@ const bookSeat = async (req, res) => {
           message: "this boi booked k bYE!",
         });
       } else {
-        return { $set: { ...result, isBooked: true } };
+        return {
+          $set: { ...result, isBooked: true, email: email, fullName: fullName },
+        };
       }
     });
 

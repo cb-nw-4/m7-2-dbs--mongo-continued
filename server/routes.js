@@ -73,13 +73,8 @@ router.post("/api/book-seat", async (req, res) => {
 
   lastBookingAttemptSucceeded = !lastBookingAttemptSucceeded;
 
-  const seatAvailability = await bookSeat(req, res);
-  // state.bookedSeats[seatId] = true;
+  await bookSeat(req, res, state);
 
-  return res.status(200).json({
-    status: 200,
-    success: true,
-  });
 });
 
 if (!state) {
