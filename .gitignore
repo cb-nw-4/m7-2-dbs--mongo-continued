@@ -3,6 +3,7 @@ Thumbs.db
 desktop.ini
 
 # OS X
+.env
 .DS_Store
 .Spotlight-V100
 .Trashes
