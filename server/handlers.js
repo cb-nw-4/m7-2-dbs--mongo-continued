@@ -1,5 +1,7 @@
 'use strict';
 
-const getSeats = async (req, res) => {};
+const getSeats = async (req, res) => {
+  
+};
 
 module.exports = { getSeats };

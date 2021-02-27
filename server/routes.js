@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const { batchImport } = require("../batchImport");
 
 const NUM_OF_ROWS = 8;
 const SEATS_PER_ROW = 12;
@@ -99,5 +100,7 @@ router.post("/api/book-seat", async (req, res) => {
     success: true,
   });
 });
+
+batchImport(seats);
 
 module.exports = router;
