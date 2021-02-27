@@ -25,28 +25,46 @@ const getSeats = async (req, res) => {
       isBooked: result.isBooked,
     };
   });
-  console.log(seats);
   client.close();
   return seats;
-
-  // res.status(200).json({
-  //   data: users,
-  // });
-
-  // console.log(users);
-
-  // if (!state) {
-  //   state = {
-  //     bookedSeats: randomlyBookSeats(30),
-  //   };
-  // }
-
-  // return res.json({
-  //   seats: seats,
-  //   bookedSeats: state.bookedSeats,
-  //   numOfRows: 8,
-  //   seatsPerRow: 12,
-  // });
 };
 
-module.exports = { getSeats };
+const bookSeat = async (req, res) => {
+  const { seatId } = req.body;
+  const client = await MongoClient(MONGO_URI, options);
+
+  await client.connect();
+
+  const db = await client.db("ticketbooker");
+
+  const findResult = await db
+    .collection("seats")
+    .findOne({ _id: seatId })
+    .then((result) => {
+      if (result.isBooked == true) {
+        res.status(400).json({
+          status: 400,
+          message: "this boi booked k bYE!",
+        });
+      } else {
+        return { $set: { ...result, isBooked: true } };
+      }
+    });
+
+  await db
+    .collection("seats")
+    .updateOne({ _id: seatId }, findResult)
+    .then((result) => {
+      res.status(200).json({
+        status: 200,
+        message: "success",
+        data: result,
+      });
+    });
+
+  state.bookedSeats[seatId] = true;
+
+  client.close();
+};
+
+module.exports = { getSeats, bookSeat };
