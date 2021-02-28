@@ -49,6 +49,7 @@ const bookSeats = async (req, res) => {
         return res.status(400).json({
         status: 400,
         message: "Please provide credit card information!",
+        seat: {id: seatId, fullName, email}
         });
     }
 
@@ -57,6 +58,7 @@ const bookSeats = async (req, res) => {
         return res.status(400).json({
             status: 400,
             message: "Please provide a valid email!",
+            seat: {id: seatId, fullName, email}
         });
     }
 
@@ -64,6 +66,7 @@ const bookSeats = async (req, res) => {
         return res.status(400).json({
         status: 400,
         message: "Please provide your full name!",
+        seat: {id: seatId, fullName, email}
         });
     }
 
@@ -78,8 +81,10 @@ const bookSeats = async (req, res) => {
         const result = await db.collection("seats").updateOne({_id: seatId, isBooked: false }, newValues);   
         if (result.matchedCount === 0) {
             client.close();
-            return res.status(400).json({
-                message: "This seat has already been booked!",
+            return res.status(404).json({
+                status: 404,
+                message: "A seat available with this id is not found",
+                seat: {id: seatId, fullName, email}
                 });
         }  
         assert.equal(1, result.matchedCount);
@@ -117,7 +122,7 @@ try {
         return res.status(404).json({
             status: 404,
             message: "The seat is not found!",
-            data: seatId
+            seat: seatId
             });
     }  
     if (result.modifiedCount === 0) {
@@ -125,7 +130,7 @@ try {
         return res.status(404).json({
             status: 404,
             message: "The seat is already available",
-            data: seatId
+            seat: seatId
             });
     }     
      
@@ -151,17 +156,19 @@ const modifyBooking = async (req, res) => {
     if (!emailRegex.test(email)) {
         return res.status(400).json({
             status: 400,
-            message: "Please provide a valid email!",
+            message: "Please provide a valid email!",           
+            seat: {id: seatId, ...req.body}
         });
     }
 
     if (!fullName) {
         return res.status(400).json({
-        status: 400,
-        message: "Please provide a full name!",
+            status: 400,
+            message: "Please provide a full name!",
+            seat: {id: seatId, ...req.body}       
         });
     }
-        
+
     const client = await MongoClient(MONGO_URI, options);
     try { 
         await client.connect();
@@ -170,11 +177,12 @@ const modifyBooking = async (req, res) => {
     
         const newValues = { $set: { clientName: fullName, email: email } };  
             
-        const result = await db.collection("seats").findOneAndUpdate({_id: seatId}, newValues, { returnOriginal: false });
-        if(result)
-            res.status(200).json({ status: 200, message: "succes" , data: result.value })
+        const result = await db.collection("seats").findOneAndUpdate({ _id: seatId, isBooked: true }, newValues, { returnOriginal: false });
+       
+        if(result.value)
+            res.status(200).json({ status: 200, message: "succes" , seat: result.value})
         else
-            res.status(404).json({ status: 404, _id: seatId, data: req.body,  message: "Seat not Found" });
+            res.status(404).json({ status: 404,  seat: {id: seatId, ...req.body},  message: "A booked seat with this id is not found" });
         
     } catch (err) {
         console.log(err.stack);
