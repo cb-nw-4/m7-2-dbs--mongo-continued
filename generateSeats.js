@@ -24,10 +24,10 @@ for (let r = 0; r < row.length; r++) {
   }
 }
 
-const client = new MongoClient(MONGO_URI, options);
-
 const generateSeats = async () => {
   try {
+    const client = new MongoClient(MONGO_URI, options);
+
     await client.connect();
   
     const db = client.db('exercise_1');
