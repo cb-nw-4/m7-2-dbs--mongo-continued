@@ -78,6 +78,8 @@ const PurchaseModal = () => {
       <Form
         onSubmit={(ev) => {
           ev.preventDefault();
+          if (status === 'awaiting-response')
+            return null;
 
           purchaseTicketRequest();
 
