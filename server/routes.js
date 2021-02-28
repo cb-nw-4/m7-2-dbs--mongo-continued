@@ -1,10 +1,12 @@
 const router = require("express").Router();
+const { batchImport } = require("./batchImport");
 
 const NUM_OF_ROWS = 8;
 const SEATS_PER_ROW = 12;
 
 // Code that is generating the seats.
 // ----------------------------------
+
 const seats = {};
 const row = ["A", "B", "C", "D", "E", "F", "G", "H"];
 for (let r = 0; r < row.length; r++) {
@@ -15,6 +17,8 @@ for (let r = 0; r < row.length; r++) {
     };
   }
 }
+batchImport(seats);
+
 // ----------------------------------
 //////// HELPERS
 const getRowName = (rowIndex) => {
