@@ -1,4 +1,14 @@
 const router = require("express").Router();
+const fs = require("file-system");
+const { MongoClient } = require("mongodb");
+const assert = require("assert");
+require("dotenv").config();
+const { MONGO_URI } = process.env;
+const options = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+};
+const { getSeats, bookSeat } = require("./handlers");
 
 const NUM_OF_ROWS = 8;
 const SEATS_PER_ROW = 12;
@@ -40,17 +50,54 @@ const randomlyBookSeats = (num) => {
 
 let state;
 
-router.get("/api/seat-availability", async (req, res) => {
-  if (!state) {
-    state = {
-      bookedSeats: randomlyBookSeats(30),
-    };
+if (!state) {
+  state = {
+    bookedSeats: randomlyBookSeats(30),
+  };
+}
+
+const batchImport = async (seats, bookedSeats) => {
+  const client = await MongoClient(MONGO_URI, options);
+  try {
+    await client.connect();
+
+    const db = client.db("ticketbooking");
+    const seatsArray = Object.entries(seats).map(([_id, seat]) => {
+      return {
+        _id,
+        price: seat.price,
+        isBooked: bookedSeats[_id] || seat.isBooked,
+      };
+    });
+
+    console.log(seatsArray);
+    const seatCount = await db.collection("seats").countDocuments();
+
+    if (seatCount > 0) {
+      await db.collection("seats").deleteMany({});
+    }
+    const results = await db.collection("seats").insertMany(seatsArray);
+    console.log("connected");
+  
+  } catch (err) {
+    console.log(err.stack);
+  } finally {
+    client.close();
+    console.log("disconnected!");
   }
+};
+
+batchImport(seats, state.bookedSeats);
+router.get("/api/seat-availability", async (req, res) => {
+  const seats = await getSeats();
 
   return res.json({
     seats: seats,
+
     bookedSeats: state.bookedSeats,
+
     numOfRows: 8,
+
     seatsPerRow: 12,
   });
 });
@@ -58,22 +105,9 @@ router.get("/api/seat-availability", async (req, res) => {
 let lastBookingAttemptSucceeded = false;
 
 router.post("/api/book-seat", async (req, res) => {
-  const { seatId, creditCard, expiration } = req.body;
+  const { creditCard, expiration } = req.body;
 
-  if (!state) {
-    state = {
-      bookedSeats: randomlyBookSeats(30),
-    };
-  }
 
-  await delay(Math.random() * 3000);
-
-  const isAlreadyBooked = !!state.bookedSeats[seatId];
-  if (isAlreadyBooked) {
-    return res.status(400).json({
-      message: "This seat has already been booked!",
-    });
-  }
 
   if (!creditCard || !expiration) {
     return res.status(400).json({
@@ -91,13 +125,14 @@ router.post("/api/book-seat", async (req, res) => {
   }
 
   lastBookingAttemptSucceeded = !lastBookingAttemptSucceeded;
+  await bookSeat(req, res, state);
 
-  state.bookedSeats[seatId] = true;
-
-  return res.status(200).json({
-    status: 200,
-    success: true,
-  });
 });
+
+if (!state) {
+  state = {
+    bookedSeats: randomlyBookSeats(30),
+  };
+}
 
 module.exports = router;

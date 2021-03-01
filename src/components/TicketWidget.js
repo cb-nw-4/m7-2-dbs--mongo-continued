@@ -16,7 +16,7 @@ function TicketWidget() {
   if (!hasLoaded) {
     return <CircularProgress />;
   }
-  console.log(hasLoaded, seats, numOfRows, seatsPerRow);
+
   return (
     <Wrapper>
       {range(numOfRows).map((rowIndex) => {
