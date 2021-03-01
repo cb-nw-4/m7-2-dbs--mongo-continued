@@ -1,25 +1,10 @@
 const router = require("express").Router();
-const { batchImport } = require("./batchImport");
+// const { batchImport } = require("./batchImport");
+const { getSeats } = require("./handlers");
 
 const NUM_OF_ROWS = 8;
 const SEATS_PER_ROW = 12;
 
-// Code that is generating the seats.
-// ----------------------------------
-
-const seats = {};
-const row = ["A", "B", "C", "D", "E", "F", "G", "H"];
-for (let r = 0; r < row.length; r++) {
-  for (let s = 1; s < 13; s++) {
-    seats[`${row[r]}-${s}`] = {
-      price: 225,
-      isBooked: false,
-    };
-  }
-}
-batchImport(seats);
-
-// ----------------------------------
 //////// HELPERS
 const getRowName = (rowIndex) => {
   return String.fromCharCode(65 + rowIndex);
@@ -44,7 +29,22 @@ const randomlyBookSeats = (num) => {
 
 let state;
 
+// ----------------------------------
+
+// Code that is generating the seats.
 router.get("/api/seat-availability", async (req, res) => {
+  const seatCollection = await getSeats();
+
+  const seats = {};
+
+  seatCollection.map((seat) => {
+    seats[seat._id] = {
+      price: seat.price,
+      isBooked: seat.isBooked,
+    };
+  });
+
+  console.log(seats);
   if (!state) {
     state = {
       bookedSeats: randomlyBookSeats(30),
@@ -105,3 +105,20 @@ router.post("/api/book-seat", async (req, res) => {
 });
 
 module.exports = router;
+
+// router.get("/api/seat-availability", async (req, res) => {
+//   const seats = await getSeats();
+
+//   if (!state) {
+//     state = {
+//       bookedSeats: randomlyBookSeats(30),
+//     };
+//   }
+
+//   return res.json({
+//     seats: seats,
+//     bookedSeats: state.bookedSeats,
+//     numOfRows: 8,
+//     seatsPerRow: 12,
+//   });
+// });
