@@ -46,6 +46,7 @@ const getSeats = async (req, res) => {
 };
 
 const bookSeat = async (req, res) => {
+  console.log(req.body);
   const { seatId, creditCard, expiration } = req.body;
 
   if (!creditCard || !expiration) {
@@ -65,7 +66,11 @@ const bookSeat = async (req, res) => {
             res.status(400).json({ message: 'This seat has already been booked!' })
           } else {
             if (updateBooking(req.body)) {
-              res.status(200).json({ success: true });
+              if (createPurchase(req.body)) {
+                res.status(200).json({ success: true });
+              } else {
+                res.status(400).json({ status: 400, message: 'Purchase record not created' });
+              }
             } else {
               res.status(400).json({ status: 400, message: 'Record not updated' });
             }
@@ -82,7 +87,7 @@ const bookSeat = async (req, res) => {
   }
 };
 
-const updateBooking = async ({ seatId, creditCard, expiration }) => {
+const updateBooking = async ({ seatId }) => {
   const updateValue = { $set: { isBooked: true }};
   
   try {
@@ -93,9 +98,9 @@ const updateBooking = async ({ seatId, creditCard, expiration }) => {
     const db = client.db('exercise_1');
     const col = db.collection('ticket_booker');
 
-    const updateResult = await col.updateOne({ _id: seatId }, updateValue);
+    const result = await col.updateOne({ _id: seatId }, updateValue);
 
-    if (updateResult.modifiedCount === 1) {
+    if (result.modifiedCount === 1) {
       client.close();
       return true;
     } else {
@@ -103,7 +108,34 @@ const updateBooking = async ({ seatId, creditCard, expiration }) => {
       return false;
     }
   } catch (err) {
-    res.status(500).json({ status: 500, message: err.message });
+    console.log(err);
+    return false;
+  }
+};
+
+const createPurchase = async (body) => {
+  // This data would be encryped in the read world!
+
+  try {
+    const client = new MongoClient(MONGO_URI, options);
+
+    await client.connect();
+
+    const db = client.db('exercise_1');
+    const col = db.collection('ticket_purchases');
+
+    const result = await col.insertOne(body);
+
+    if (result.insertedCount === 1) {
+      client.close();
+      return true;
+    } else {
+      client.close();
+      return false;
+    }
+  } catch (err) {
+    console.log(err);
+    return false;
   }
 };
 
