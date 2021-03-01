@@ -117,4 +117,80 @@ const updateBooking = async ({ fullName, email, seatId, creditCard, expiration }
   }
 };
 
-module.exports = { getSeats, bookSeat };
+const deleteBooking = async (req, res) => {
+  const _id = req.params.seatId;
+  const updateValue = {
+    $set: { isBooked: false },
+    $unset: { bookingData: '' }
+  };
+  
+  try {
+    const client = new MongoClient(MONGO_URI, options);
+
+    await client.connect();
+
+    const db = client.db('exercise_1');
+    const col = db.collection('ticket_booker');
+
+    const result = await col.updateOne({ _id }, updateValue);
+
+    if (result.matchedCount === 1) {
+      if (result.modifiedCount === 1) {
+        res.status(200).json({ status: 200, message: 'Booking deleted' });
+      } else {
+        res.status(400).json({ status: 400, message: 'Booking not updated' });
+      }
+    } else {
+      res.status(404).json({ status: 404, message: 'Seat not found' });
+    }
+
+    client.close();
+  } catch (err) {
+    res.status(500).json({ status: 500, message: err.message });
+  }
+};
+
+const updateCustomerInfo = async (req, res) => {
+  const _id = req.params.seatId;
+  const { fullName, email } = req.body;
+  let updateValue = {};
+
+  if (!fullName && !email) {
+    res.status(400).json({ status: 400, message: 'Must provide first name and/or email' });
+  } else {
+    if (fullName && email) {
+      updateValue = { $set: { 'bookingData.fullName': fullName, 'bookingData.email': email }};
+    } else if (fullName && !email) {
+      updateValue = { $set: { 'bookingData.fullName': fullName }};
+    } else {
+      updateValue = { $set: { 'bookingData.email': email }};
+    }
+
+    try {
+      const client = new MongoClient(MONGO_URI, options);
+
+      await client.connect();
+
+      const db = client.db('exercise_1');
+      const col = db.collection('ticket_booker');
+
+      const result = await col.updateOne({ _id }, updateValue);
+
+      if (result.matchedCount === 1) {
+        if (result.modifiedCount === 1) {
+          res.status(200).json({ status: 200, message: 'Customer updated' });
+        } else {
+          res.status(400).json({ status: 400, message: 'Customer not updated' });
+        }
+      } else {
+        res.status(404).json({ status: 404, message: 'Seat not found' });
+      }
+
+      client.close();
+    } catch (err) {
+      res.status(500).json({ status: 500, message: err.message });
+    }
+  }
+};
+
+module.exports = { getSeats, bookSeat, deleteBooking, updateCustomerInfo };

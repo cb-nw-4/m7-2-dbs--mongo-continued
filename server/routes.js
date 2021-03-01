@@ -1,6 +1,6 @@
 const router = require("express").Router();
 
-const { getSeats, bookSeat } = require('./handlers');
+const { getSeats, bookSeat, deleteBooking, updateCustomerInfo } = require('./handlers');
 
 const NUM_OF_ROWS = 8;
 const SEATS_PER_ROW = 12;
@@ -58,6 +58,8 @@ let state;
 // });
 router.get('/api/seat-availability', getSeats);
 router.post('/api/book-seat', bookSeat);
+router.delete('/api/delete-booking/:seatId', deleteBooking);
+router.patch('/api/update-customer/:seatId', updateCustomerInfo);
 
 //let lastBookingAttemptSucceeded = false;
 
