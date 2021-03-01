@@ -1,14 +1,8 @@
 const router = require("express").Router();
-const fs = require("file-system");
-const { MongoClient } = require("mongodb");
-const assert = require("assert");
 require("dotenv").config();
-const { MONGO_URI } = process.env;
-const options = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-};
-const { getSeats, bookSeat } = require("./handlers");
+
+const { getSeats,getReservations, bookSeat, deleteBooking, updateBooking } = require("./handlers");
+const { batchImport } = require("./batchImport");
 
 const NUM_OF_ROWS = 8;
 const SEATS_PER_ROW = 12;
@@ -56,37 +50,6 @@ if (!state) {
   };
 }
 
-const batchImport = async (seats, bookedSeats) => {
-  const client = await MongoClient(MONGO_URI, options);
-  try {
-    await client.connect();
-
-    const db = client.db("ticketbooking");
-    const seatsArray = Object.entries(seats).map(([_id, seat]) => {
-      return {
-        _id,
-        price: seat.price,
-        isBooked: bookedSeats[_id] || seat.isBooked,
-      };
-    });
-
-    console.log(seatsArray);
-    const seatCount = await db.collection("seats").countDocuments();
-
-    if (seatCount > 0) {
-      await db.collection("seats").deleteMany({});
-    }
-    const results = await db.collection("seats").insertMany(seatsArray);
-    console.log("connected");
-  
-  } catch (err) {
-    console.log(err.stack);
-  } finally {
-    client.close();
-    console.log("disconnected!");
-  }
-};
-
 batchImport(seats, state.bookedSeats);
 router.get("/api/seat-availability", async (req, res) => {
   const seats = await getSeats();
@@ -102,12 +65,15 @@ router.get("/api/seat-availability", async (req, res) => {
   });
 });
 
+router.get('/allReservations', async (req, res) => {
+  const result = await getReservations();
+  return res.json({
+    result : result
+})})
 let lastBookingAttemptSucceeded = false;
 
 router.post("/api/book-seat", async (req, res) => {
   const { creditCard, expiration } = req.body;
-
-
 
   if (!creditCard || !expiration) {
     return res.status(400).json({
@@ -126,7 +92,6 @@ router.post("/api/book-seat", async (req, res) => {
 
   lastBookingAttemptSucceeded = !lastBookingAttemptSucceeded;
   await bookSeat(req, res, state);
-
 });
 
 if (!state) {
@@ -135,4 +100,8 @@ if (!state) {
   };
 }
 
+router.delete("/book-seat/:_id", deleteBooking);
+
+router.patch('/book-seat/:_id', (req, res)=> {
+  updateBooking(req, res, state)});
 module.exports = router;

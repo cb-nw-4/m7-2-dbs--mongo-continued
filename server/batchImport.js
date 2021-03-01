@@ -9,20 +9,35 @@ const options = {
   useUnifiedTopology: true,
 };
 
-const batchImport = async () => {
-  try {
-    const typeOfGreetings = greetings.length;
- 
+const batchImport = async (seats, bookedSeats) => {
   const client = await MongoClient(MONGO_URI, options);
-  await client.connect();
-  const db = client.db("exercise_1");
-  const result = await db.collection("typeOf").insertMany(greetings);
-  assert.equal(typeOfGreetings, result.insertedCount);
-  console.log('success')
-} catch (err) {
-  console.log(err.stack);
+  try {
+    await client.connect();
 
-}
-client.close();
-}
-batchImport();
+    const db = client.db("ticketbooking");
+    const seatsArray = Object.entries(seats).map(([_id, seat]) => {
+      return {
+        _id,
+        price: seat.price,
+        isBooked: bookedSeats[_id] || seat.isBooked,
+      };
+    });
+
+
+    const seatCount = await db.collection("seats").countDocuments();
+
+    if (seatCount > 0) {
+      await db.collection("seats").deleteMany({});
+    }
+    const results = await db.collection("seats").insertMany(seatsArray);
+    console.log("connected");
+  
+  } catch (err) {
+    console.log(err.stack);
+  } finally {
+    client.close();
+    console.log("disconnected!");
+  }
+};
+
+module.exports = { batchImport }
