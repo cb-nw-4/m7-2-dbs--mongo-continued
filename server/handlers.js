@@ -62,7 +62,7 @@ let lastBookingAttemptSucceeded = false;
 
 const bookSeats = async (req, res) => {
   const client = await MongoClient(MONGO_URI, options);
-  const { seatId, creditCard, expiration } = req.body;
+  const { seatId, creditCard, expiration, fullName, email } = req.body;
 
   await client.connect();
   const db = client.db("booking_system");
@@ -91,13 +91,24 @@ const bookSeats = async (req, res) => {
   }
 
   lastBookingAttemptSucceeded = !lastBookingAttemptSucceeded;
-
-  const newValues = { $set: { isBooked: true } };
+  const newSeatValues = {
+    $set: { isBooked: true },
+  };
+  const newReservationValues = {
+    _id: seatId,
+    userName: fullName,
+    userEmail: email,
+    userCard: creditCard,
+    cardExpiration: expiration,
+    seatbooking: seatId,
+  };
   const updateSelectedSeat = await db
     .collection("seats")
-    .updateOne({ _id: seatId }, newValues);
+    .updateOne({ _id: seatId }, newSeatValues);
   assert.strictEqual(1, updateSelectedSeat.matchedCount);
   assert.strictEqual(1, updateSelectedSeat.modifiedCount);
+
+  await db.collection("reservations").insertOne(newReservationValues);
 
   return res.status(200).json({
     status: 200,
@@ -105,4 +116,56 @@ const bookSeats = async (req, res) => {
   });
 };
 
-module.exports = { getSeats, bookSeats };
+const deleteBooking = async (req, res) => {
+  const client = await MongoClient(MONGO_URI, options);
+  const id = req.params._id;
+  console.log(id);
+  try {
+    await client.connect();
+
+    const db = client.db("booking_system");
+    const newValues = {
+      $set: { isBooked: false },
+    };
+    await db.collection("seats").updateOne({ _id: id }, newValues);
+    await db.collection("reservations").deleteOne({ _id: id });
+    res.status(200).json({ status: 200, message: "data deleted" });
+  } catch (err) {
+    console.log(err.stack);
+    res.status(500).json({ status: 500, data: _id, message: err.message });
+  }
+  client.close();
+};
+
+const updateBooking = async (req, res) => {
+  const client = await MongoClient(MONGO_URI, options);
+  const id = req.params._id;
+  console.log(req.body);
+  const newName = req.body.fullName;
+  const newEmail = req.body.email;
+  console.log(id);
+  try {
+    await client.connect();
+
+    const db = client.db("booking_system");
+    const newValues = {
+      $set: { userName: newName, userEmail: newEmail },
+    };
+    const updatereservation = await db
+      .collection("reservations")
+      .updateOne({ _id: id }, newValues);
+    assert.strictEqual(1, updatereservation.matchedCount);
+    assert.strictEqual(1, updatereservation.modifiedCount);
+    res.status(200).json({
+      status: 200,
+      data: updatereservation,
+      message: "reservation updated",
+    });
+  } catch (err) {
+    console.log(err.stack);
+    res.status(500).json({ status: 500, data: _id, message: err.message });
+  }
+  client.close();
+};
+
+module.exports = { getSeats, bookSeats, deleteBooking, updateBooking };
