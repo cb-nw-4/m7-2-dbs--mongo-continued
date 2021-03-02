@@ -129,7 +129,7 @@ const deleteBooking = async (req, res) => {
     };
     await db.collection("seats").updateOne({ _id: id }, newValues);
     await db.collection("reservations").deleteOne({ _id: id });
-    res.status(200).json({ status: 200, message: "data deleted" });
+    res.status(204).json({ status: 204, message: "data deleted" });
   } catch (err) {
     console.log(err.stack);
     res.status(500).json({ status: 500, data: _id, message: err.message });

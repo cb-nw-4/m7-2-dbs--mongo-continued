@@ -11,7 +11,7 @@ router.get("/api/seat-availability", getSeats);
 
 router.post("/api/book-seat", bookSeats);
 
-router.get("/api/delete-seat/:_id", deleteBooking);
+router.delete("/api/delete-seat/:_id", deleteBooking);
 
 router.put("/api/seat-update/:_id", updateBooking);
 
