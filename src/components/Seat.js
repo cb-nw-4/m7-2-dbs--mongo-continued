@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import Tippy from '@tippy.js/react';
+
 import VisuallyHidden from '@reach/visually-hidden';
 import seatImageSrc from '../assets/seat-available.svg';
 import { getRowName, getSeatNum, encodeSeatId } from '../helpers';
@@ -42,5 +43,6 @@ const Wrapper = styled(UnstyledButton)`
     filter: grayscale(100%);
   }
 `;
+
 
 export default Seat;
