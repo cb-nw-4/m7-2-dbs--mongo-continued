@@ -1,3 +1,5 @@
+const { getSeats, bookSeat } = require("./handlers");
+
 const router = require("express").Router();
 
 const NUM_OF_ROWS = 8;
@@ -40,64 +42,53 @@ const randomlyBookSeats = (num) => {
 
 let state;
 
-router.get("/api/seat-availability", async (req, res) => {
-  if (!state) {
-    state = {
-      bookedSeats: randomlyBookSeats(30),
-    };
-  }
-
-  return res.json({
-    seats: seats,
-    bookedSeats: state.bookedSeats,
-    numOfRows: 8,
-    seatsPerRow: 12,
-  });
-});
+router.get("/api/seat-availability", getSeats);
 
 let lastBookingAttemptSucceeded = false;
 
-router.post("/api/book-seat", async (req, res) => {
-  const { seatId, creditCard, expiration } = req.body;
+router.post("/api/book-seat", bookSeat);
 
-  if (!state) {
-    state = {
-      bookedSeats: randomlyBookSeats(30),
-    };
-  }
+// router.post("/api/book-seat", async (req, res) => {
+//   const { seatId, creditCard, expiration, fullName, setFullName } = req.body;
 
-  await delay(Math.random() * 3000);
+//   if (!state) {
+//     state = {
+//       bookedSeats: randomlyBookSeats(30),
+//     };
+//   }
 
-  const isAlreadyBooked = !!state.bookedSeats[seatId];
-  if (isAlreadyBooked) {
-    return res.status(400).json({
-      message: "This seat has already been booked!",
-    });
-  }
+//   await delay(Math.random() * 3000);
 
-  if (!creditCard || !expiration) {
-    return res.status(400).json({
-      status: 400,
-      message: "Please provide credit card information!",
-    });
-  }
+//   const isAlreadyBooked = !!state.bookedSeats[seatId];
+//   if (isAlreadyBooked) {
+//     return res.status(400).json({
+//       message: "This seat has already been booked!",
+//     });
+//   }
 
-  if (lastBookingAttemptSucceeded) {
-    lastBookingAttemptSucceeded = !lastBookingAttemptSucceeded;
+//   if (!creditCard || !expiration) {
+//     return res.status(400).json({
+//       status: 400,
+//       message: "Please provide credit card information!",
+//     });
+//   }
 
-    return res.status(500).json({
-      message: "An unknown error has occurred. Please try your request again.",
-    });
-  }
+//   if (lastBookingAttemptSucceeded) {
+//     lastBookingAttemptSucceeded = !lastBookingAttemptSucceeded;
 
-  lastBookingAttemptSucceeded = !lastBookingAttemptSucceeded;
+//     return res.status(500).json({
+//       message: "An unknown error has occurred. Please try your request again.",
+//     });
+//   }
 
-  state.bookedSeats[seatId] = true;
+//   lastBookingAttemptSucceeded = !lastBookingAttemptSucceeded;
 
-  return res.status(200).json({
-    status: 200,
-    success: true,
-  });
-});
+//   state.bookedSeats[seatId] = true;
+
+//   return res.status(200).json({
+//     status: 200,
+//     success: true,
+//   });
+// });
 
 module.exports = router;
