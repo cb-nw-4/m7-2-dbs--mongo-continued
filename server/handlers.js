@@ -31,6 +31,58 @@ const getSeats = async (req, res) => {
   console.log("disconnected!");
 };
 
-getSeats();
+// const handleBooking = async (req, res) => {
+//   try {
+//     const dbName = "ticket-booker";
+//     const _id = req.params._id;
+//     const newValues = { $set: { isBooked: req.body.isBooked } };
 
-module.exports = { getSeats };
+//     await client.connect();
+
+//     const db = client.db(dbName);
+//     console.log("connected");
+
+//     const results = await db.collection("seats").updateOne({ _id }, newValues);
+//     assert.equal(1, results.matchedCount);
+//     assert.equal(1, results.modifiedCount);
+
+//     res.status(201).json({ status: 204, message: results });
+//   } catch (err) {
+//     console.log(err.stack);
+//     res.status(500).json({ status: 500, message: err.message });
+//   }
+//   client.close();
+//   console.log("disconnected!");
+// };
+
+const handleBooking = async (req, res) => {
+  const dbName = "ticket-booker";
+  const { _id, creditCard, expiration, fullName, email } = req.body;
+
+  await client.connect();
+
+  const db = client.db(dbName);
+  console.log("connected");
+
+  db.collection("seats").findOne({ _id }, (err, result) => {
+    if (result.isBooked === true) {
+      res.status(400).json({
+        status: 400,
+        data: result,
+        message: "Seat is already booked.",
+      });
+    } else if (!creditCard || !expiration || !fullName || !email) {
+      res.status(400).json({
+        status: 400,
+        data: result,
+        message:
+          "Missing information! Please fill out missing information before booking the seat.",
+      });
+    } else if (result.isBooked === false) {
+      db.collection("seats").updateOne({ _id }, { $set: { isBooked: true } });
+      res.status(200).json({ status: 200, data: result });
+    }
+  });
+};
+
+module.exports = { getSeats, handleBooking };
