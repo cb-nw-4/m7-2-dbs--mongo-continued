@@ -187,10 +187,12 @@ const deleteBook = async (req, res) =>{
 
         const result = await db.collection("reservations").updateOne(query1, newValues)
 
+
         const resultInfo = await db.collection("info").deleteOne(query)
+
     
 
-        if( resultInfo.deletedCount === 1){
+        if( result.modifiedCount === 1 && resultInfo.deletedCount === 1){
             return res.status(200).json({
                 status: 200,
                 success: true,
