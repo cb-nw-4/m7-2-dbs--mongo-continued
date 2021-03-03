@@ -9,29 +9,6 @@ const options = {
   useUnifiedTopology: true,
 };
 
-// const NUM_OF_ROWS = 8;
-// const SEATS_PER_ROW = 12;
-// const getRowName = (rowIndex) => {
-//   return String.fromCharCode(65 + rowIndex);
-// };
-
-// const randomlyBookSeats = (num) => {
-//   const bookedSeats = {};
-
-//   while (num > 0) {
-//     const row = Math.floor(Math.random() * NUM_OF_ROWS);
-//     const seat = Math.floor(Math.random() * SEATS_PER_ROW);
-
-//     const seatId = `${getRowName(row)}-${seat + 1}`;
-
-//     bookedSeats[seatId] = true;
-
-//     num--;
-//   }
-
-//   return bookedSeats;
-// };
-
 const getSeats = async (req, res) => {
   const client = await MongoClient(MONGO_URI, options);
   try {
@@ -66,54 +43,61 @@ const bookSeats = async (req, res) => {
 
   await client.connect();
   const db = client.db("booking_system");
+  try {
+    const selectedSeat = await db.collection("seats").findOne({ _id: seatId });
 
-  const selectedSeat = await db.collection("seats").findOne({ _id: seatId });
+    if (selectedSeat.isBooked) {
+      return res.status(400).json({
+        message: "This seat has already been booked!",
+      });
+    }
 
-  if (selectedSeat.isBooked) {
-    return res.status(400).json({
-      message: "This seat has already been booked!",
-    });
-  }
+    if (!creditCard || !expiration) {
+      return res.status(400).json({
+        status: 400,
+        message: "Please provide credit card information!",
+      });
+    }
 
-  if (!creditCard || !expiration) {
-    return res.status(400).json({
-      status: 400,
-      message: "Please provide credit card information!",
-    });
-  }
+    if (lastBookingAttemptSucceeded) {
+      lastBookingAttemptSucceeded = !lastBookingAttemptSucceeded;
 
-  if (lastBookingAttemptSucceeded) {
+      return res.status(500).json({
+        message:
+          "An unknown error has occurred. Please try your request again.",
+      });
+    }
+
     lastBookingAttemptSucceeded = !lastBookingAttemptSucceeded;
+    const newSeatValues = {
+      $set: { isBooked: true },
+    };
+    const newReservationValues = {
+      _id: seatId,
+      userName: fullName,
+      userEmail: email,
+      userCard: creditCard,
+      cardExpiration: expiration,
+      seatbooking: seatId,
+    };
+    const updateSelectedSeat = await db
+      .collection("seats")
+      .updateOne({ _id: seatId }, newSeatValues);
+    assert.strictEqual(1, updateSelectedSeat.matchedCount);
+    assert.strictEqual(1, updateSelectedSeat.modifiedCount);
 
-    return res.status(500).json({
-      message: "An unknown error has occurred. Please try your request again.",
+    await db.collection("reservations").insertOne(newReservationValues);
+
+    return res.status(201).json({
+      status: 201,
+      success: true,
     });
+  } catch (err) {
+    console.log(err.stack);
+    res.status(500).json({ status: 500, data: _id, message: err.message });
   }
 
-  lastBookingAttemptSucceeded = !lastBookingAttemptSucceeded;
-  const newSeatValues = {
-    $set: { isBooked: true },
-  };
-  const newReservationValues = {
-    _id: seatId,
-    userName: fullName,
-    userEmail: email,
-    userCard: creditCard,
-    cardExpiration: expiration,
-    seatbooking: seatId,
-  };
-  const updateSelectedSeat = await db
-    .collection("seats")
-    .updateOne({ _id: seatId }, newSeatValues);
-  assert.strictEqual(1, updateSelectedSeat.matchedCount);
-  assert.strictEqual(1, updateSelectedSeat.modifiedCount);
-
-  await db.collection("reservations").insertOne(newReservationValues);
-
-  return res.status(200).json({
-    status: 200,
-    success: true,
-  });
+  client.close();
 };
 
 const deleteBooking = async (req, res) => {
@@ -148,19 +132,28 @@ const updateBooking = async (req, res) => {
     await client.connect();
 
     const db = client.db("booking_system");
-    const newValues = {
-      $set: { userName: newName, userEmail: newEmail },
-    };
-    const updatereservation = await db
-      .collection("reservations")
-      .updateOne({ _id: id }, newValues);
-    assert.strictEqual(1, updatereservation.matchedCount);
-    assert.strictEqual(1, updatereservation.modifiedCount);
-    res.status(200).json({
-      status: 200,
-      data: updatereservation,
-      message: "reservation updated",
-    });
+    if (newName === "" || newEmail === "") {
+      res.status(400).json({
+        status: 400,
+        message: "Please provide with appropriate name and email.",
+      });
+    } else {
+      const newValues = {
+        $set: { userName: newName, userEmail: newEmail },
+      };
+      const updatereservation = await db
+        .collection("reservations")
+        .updateOne({ _id: id }, newValues);
+
+      assert.strictEqual(1, updatereservation.matchedCount);
+      assert.strictEqual(1, updatereservation.modifiedCount);
+
+      res.status(200).json({
+        status: 200,
+        data: updatereservation,
+        message: "Reservation updated with provided information",
+      });
+    }
   } catch (err) {
     console.log(err.stack);
     res.status(500).json({ status: 500, data: _id, message: err.message });
