@@ -19,9 +19,14 @@ const getSeats = async (req, res) => {
 
     const result = await db.collection("flight").find().toArray();
 
+    let allSeats = {};
+    result.forEach((seat) => {
+      allSeats[seat._id] = seat;
+    });
+
     result
       ? res.status(200).json({
-          seats: result,
+          seats: allSeats,
           bookedSeats: {},
           numOfRows: 8,
           seatsPerRow: 12,
@@ -33,4 +38,41 @@ const getSeats = async (req, res) => {
   client.close();
 };
 
-module.exports = { getSeats };
+const bookSeat = async (req, res) => {
+  const { creditCard, expiration } = req.body;
+  const _id = req.body.seatId;
+
+  if (!creditCard || !expiration) {
+    return res.status(400).json({
+      status: 400,
+      message: "Please provide credit card information!",
+    });
+  }
+
+  const client = await MongoClient(MONGO_URI, options);
+  try {
+    await client.connect();
+    const db = client.db("ticket_booker");
+    const result = await db.collection("flight").findOne({ _id });
+
+    if (result) {
+      if (!result.isBooked) {
+        const booking = await db
+          .collection("flight")
+          .updateOne({ _id }, { $set: { isBooked: true } });
+        res.status(200).json({ status: 200, success: true });
+      } else {
+        res.status(400).json({
+          message: "This seat has already been booked!",
+        });
+      }
+    } else {
+      res.status(404).json({ status: 404, data: "Seat not Found" });
+    }
+  } catch (err) {
+    console.log(err.stack);
+  }
+  client.close();
+};
+
+module.exports = { getSeats, bookSeat };
