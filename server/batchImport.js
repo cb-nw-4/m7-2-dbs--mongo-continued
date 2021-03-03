@@ -29,7 +29,7 @@ const batchImport = async (seats, bookedSeats) => {
     if (seatCount > 0) {
       await db.collection("seats").deleteMany({});
     }
-    const results = await db.collection("seats").insertMany(seatsArray);
+ await db.collection("seats").insertMany(seatsArray);
     console.log("connected");
   
   } catch (err) {

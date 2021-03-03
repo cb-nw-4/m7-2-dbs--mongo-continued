@@ -33,12 +33,13 @@ const getReservations = async (req, res) => {
   const results = await db.collection("newBooking").find().toArray();
   results.forEach((result) => {
     seats[result._id] = {
+      _id: seats[result._id],
       email: result.email,
       fullName: result.fullName,
     };
   });
   client.close();
-  return seats;
+  return results;
 };
 
 const bookSeat = async (req, res, state) => {

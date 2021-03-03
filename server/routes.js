@@ -1,7 +1,13 @@
 const router = require("express").Router();
 require("dotenv").config();
 
-const { getSeats,getReservations, bookSeat, deleteBooking, updateBooking } = require("./handlers");
+const {
+  getSeats,
+  getReservations,
+  bookSeat,
+  deleteBooking,
+  updateBooking,
+} = require("./handlers");
 const { batchImport } = require("./batchImport");
 
 const NUM_OF_ROWS = 8;
@@ -43,14 +49,14 @@ const randomlyBookSeats = (num) => {
 };
 
 let state;
-
+console.log(seats);
 if (!state) {
   state = {
     bookedSeats: randomlyBookSeats(30),
   };
 }
 
-batchImport(seats, state.bookedSeats);
+
 router.get("/api/seat-availability", async (req, res) => {
   const seats = await getSeats();
 
@@ -65,11 +71,12 @@ router.get("/api/seat-availability", async (req, res) => {
   });
 });
 
-router.get('/allReservations', async (req, res) => {
+router.get("/allReservations", async (req, res) => {
   const result = await getReservations();
   return res.json({
-    result : result
-})})
+    result,
+  });
+});
 let lastBookingAttemptSucceeded = false;
 
 router.post("/api/book-seat", async (req, res) => {
@@ -102,6 +109,8 @@ if (!state) {
 
 router.delete("/book-seat/:_id", deleteBooking);
 
-router.patch('/book-seat/:_id', (req, res)=> {
-  updateBooking(req, res, state)});
+router.patch("/book-seat/:_id", (req, res) => {
+  updateBooking(req, res, state);
+});
+batchImport(seats, state.bookedSeats);
 module.exports = router;
