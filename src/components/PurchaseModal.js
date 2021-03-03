@@ -81,7 +81,7 @@ const PurchaseModal = () => {
 
           purchaseTicketRequest();
 
-          fetch('/api/book-seat', {
+          fetch('api/book-seat', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
