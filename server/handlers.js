@@ -77,4 +77,24 @@ const bookSeat = async (req, res) => {
   client.close();
 };
 
-module.exports = { getSeats, bookSeat };
+const deleteBooking = async (req, res) => {
+  const _id = req.body.seatId;
+
+  const client = await MongoClient(MONGO_URI, options);
+  try {
+    await client.connect();
+    const db = client.db("ticket_booker");
+    const result = await db.collection("flight").findOne({ _id });
+
+    if (result) {
+      const newValue = { _id, price: result.price, isBooked: false };
+      await db.collection("flight").replaceOne({ _id }, { ...newValue });
+      res.status(200).json({ status: 200, success: true });
+    }
+  } catch (err) {
+    res.status(500).json({ status: 500, message: err.message });
+  }
+  client.close();
+};
+
+module.exports = { getSeats, bookSeat, deleteBooking };
