@@ -41,6 +41,8 @@ const getSeats = async (req, res) => {
 const bookSeat = async (req, res) => {
   const { creditCard, expiration } = req.body;
   const _id = req.body.seatId;
+  const email = req.body.email;
+  const fullName = req.body.fullName;
 
   if (!creditCard || !expiration) {
     return res.status(400).json({
@@ -59,7 +61,7 @@ const bookSeat = async (req, res) => {
       if (!result.isBooked) {
         const booking = await db
           .collection("flight")
-          .updateOne({ _id }, { $set: { isBooked: true } });
+          .updateOne({ _id }, { $set: { isBooked: true, email, fullName } });
         res.status(200).json({ status: 200, success: true });
       } else {
         res.status(400).json({
