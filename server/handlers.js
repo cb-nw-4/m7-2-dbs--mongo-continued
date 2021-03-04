@@ -97,4 +97,32 @@ const deleteBooking = async (req, res) => {
   client.close();
 };
 
-module.exports = { getSeats, bookSeat, deleteBooking };
+const updateUserInfo = async (req, res) => {
+  const { fullName, newName, email, newEmail } = req.body;
+
+  const client = await MongoClient(MONGO_URI, options);
+  try {
+    await client.connect();
+    const db = client.db("ticket_booker");
+    if (fullName) {
+      await db
+        .collection("flight")
+        .updateOne({ fullName }, { $set: { fullName: newName } });
+      assert.equal(1, result.matchedCount);
+      assert.equal(1, result.modifiedCount);
+      res.status(200).json({ status: 200, success: true });
+    } else if (email) {
+      await db
+        .collection("flight")
+        .updateOne({ email }, { $set: { email: newEmail } });
+      assert.equal(1, result.matchedCount);
+      assert.equal(1, result.modifiedCount);
+      res.status(200).json({ status: 200, success: true });
+    }
+  } catch (err) {
+    res.status(500).json({ status: 500, message: err.message });
+  }
+  client.close();
+};
+
+module.exports = { getSeats, bookSeat, deleteBooking, updateUserInfo };
